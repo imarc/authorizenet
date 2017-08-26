@@ -23,15 +23,15 @@ class AuthorizeNet
         $this->api = $api;
     }
 
-    public function authorizeCreditCard(array $order)
+    public function authorizeCreditCard(array $order, $testMode = null)
     {
-        $result = $this->api->authorizeCreditCard($order);
+        $result = $this->api->authorizeCreditCard($order, $testMode);
         return $result;
     }
 
-    public function capturePreviouslyAuthorizedAmount($transactionId)
+    public function capturePreviouslyAuthorizedCreditCard($transactionId, $amount = null, $testMode = null)
     {
-        $result = $this->api->capturePreviouslyAuthorizedAmount($transactionId);
+        $result = $this->api->capturePreviouslyAuthorizedCreditCard($transactionId, $amount, $testMode);
         return $result;
     }
 }

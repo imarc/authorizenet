@@ -2,6 +2,7 @@
 
 namespace Pseudocody\AuthorizeNet;
 
+use net\authorize\api\constants\ANetEnvironment;
 use net\authorize\api\contract\v1 as AnetAPI;
 use net\authorize\api\controller as AnetController;
 
@@ -16,7 +17,7 @@ class AuthorizeNetApi
         $this->transactionKey = $transactionKey;
     }
 
-    public function authorizeCreditCard(array $order)
+    public function authorizeCreditCard(array $order, bool $testMode = null)
     {
         /* Create a merchantAuthenticationType object with authentication details retrieved from the constants file */
         $merchantAuthentication = new AnetAPI\MerchantAuthenticationType();
@@ -34,18 +35,12 @@ class AuthorizeNetApi
         $paymentOne->setCreditCard($creditCard);
         // Create order information
         $orderType = new AnetAPI\OrderType();
-        $orderType->setInvoiceNumber($order['invoice_number'] ?? '');
         $orderType->setDescription($order['description'] ?? '');
         // Set the customer's Bill To address
         $customerAddress = new AnetAPI\CustomerAddressType();
-        $customerAddress->setFirstName($order['customer']['first_name'] ?? '');
-        $customerAddress->setLastName($order['customer']['last_name'] ?? '');
-        $customerAddress->setCompany($order['customer']['company_name'] ?? '');
-        $customerAddress->setAddress($order['customer']['address'] ?? '');
-        $customerAddress->setCity($order['customer']['city'] ?? '');
-        $customerAddress->setState($order['customer']['state'] ?? '');
+        $customerAddress->setFirstName($order['customer']['first_name']);
+        $customerAddress->setLastName($order['customer']['last_name']);
         $customerAddress->setZip($order['customer']['zip']);
-        $customerAddress->setCountry($order['customer']['country'] ?? '');
         // Create a TransactionRequestType object and add the previous objects to it
         $transactionRequestType = new AnetAPI\TransactionRequestType();
         $transactionRequestType->setTransactionType('authOnlyTransaction');
@@ -53,36 +48,6 @@ class AuthorizeNetApi
         $transactionRequestType->setOrder($orderType);
         $transactionRequestType->setPayment($paymentOne);
         $transactionRequestType->setBillTo($customerAddress);
-        // Set the customer's identifying information
-        if (isset($order['customer']['data_type'])) {
-            $customerData = new AnetAPI\CustomerDataType();
-            $customerData->setType($order['customer']['data_type']['type'] ?? '');
-            $customerData->setId($order['customer']['data_type']['id'] ?? '');
-            $customerData->setEmail($order['customer']['data_type']['email'] ?? '');
-
-            $transactionRequestType->setCustomer($customerData);
-        }
-        // Add values for transaction settings
-        if (isset($order['setting_types'])) {
-            foreach ((array)$order['setting_types'] as $settingType) {
-                $duplicateWindowSetting = new AnetAPI\SettingType();
-                $duplicateWindowSetting->setSettingName($settingType['name']);
-                $duplicateWindowSetting->setSettingValue($settingType['value']);
-
-                $transactionRequestType->addToTransactionSettings($duplicateWindowSetting);
-            }
-        }
-        if (isset($order['field_types'])) {
-            // Add some merchant defined fields. These fields won't be stored with the transaction,
-            // but will be echoed back in the response.
-            foreach ((array)$order['field_types'] as $fieldType) {
-                $merchantDefinedField = new AnetAPI\UserFieldType();
-                $merchantDefinedField->setName($fieldType['name']);
-                $merchantDefinedField->setValue($fieldType['value']);
-
-                $transactionRequestType->addToUserFields($merchantDefinedField);
-            }
-        }
         // Assemble the complete transaction request
         $request = new AnetAPI\CreateTransactionRequest();
         $request->setMerchantAuthentication($merchantAuthentication);
@@ -90,12 +55,16 @@ class AuthorizeNetApi
         $request->setTransactionRequest($transactionRequestType);
         // Create the controller and get the response
         $controller = new AnetController\CreateTransactionController($request);
-        $response = $controller->executeWithApiResponse(\net\authorize\api\constants\ANetEnvironment::SANDBOX);
+        if ($testMode) {
+            $response = $controller->executeWithApiResponse(ANetEnvironment::SANDBOX);
+        } else {
+            $response = $controller->executeWithApiResponse(ANetEnvironment::PRODUCTION);
+        }
 
         return $this->handleResponse($response);
     }
 
-    public function capturePreviouslyAuthorizedAmount($transactionId)
+    public function capturePreviouslyAuthorizedCreditCard($transactionId, int $amount = null, bool $testMode = null)
     {
         /* Create a merchantAuthenticationType object with authentication details retrieved from the constants file */
         $merchantAuthentication = new AnetAPI\MerchantAuthenticationType();
@@ -104,13 +73,21 @@ class AuthorizeNetApi
         // Now capture the previously authorized  amount
         $transactionRequestType = new AnetAPI\TransactionRequestType();
         $transactionRequestType->setTransactionType('priorAuthCaptureTransaction');
+        if ($amount !== null) {
+            $transactionRequestType->setAmount($amount);
+        }
         $transactionRequestType->setRefTransId($transactionId);
 
         $request = new AnetAPI\CreateTransactionRequest();
         $request->setMerchantAuthentication($merchantAuthentication);
         $request->setTransactionRequest($transactionRequestType);
         $controller = new AnetController\CreateTransactionController($request);
-        $response = $controller->executeWithApiResponse(\net\authorize\api\constants\ANetEnvironment::SANDBOX);
+        // testMode
+        if ($testMode) {
+            $response = $controller->executeWithApiResponse(ANetEnvironment::SANDBOX);
+        } else {
+            $response = $controller->executeWithApiResponse(ANetEnvironment::PRODUCTION);
+        }
 
         return $this->handleResponse($response);
     }

@@ -3,7 +3,6 @@
 namespace Pseudocody\AuthorizeNet;
 
 use Illuminate\Support\ServiceProvider;
-use Pseudocody\Authorize\AuthorizeNet;
 
 class AuthorizeNetServiceProvider extends ServiceProvider
 {
@@ -12,11 +11,18 @@ class AuthorizeNetServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->app->bind(AuthorizeNet::class, function () {
-            return new Mailchimp(config('authorizenet.login_id'), config('authorizenet.transaction_key'));
+            return new AuthorizeNet(config('authorizenet.login_id'), config('authorizenet.transaction_key'));
         });
         $this->publishes([
             __DIR__ . '/../config/authorizenet.php' => config_path('authorizenet.php'),
         ]);
+    }
+
+    public function publishConfig()
+    {
+        $this->publishes([
+            __DIR__ . '/../config/authorizenet.php' => config_path('authorizenet.php')
+        ], 'config');
     }
 
     public function register()
