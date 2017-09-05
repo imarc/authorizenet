@@ -34,4 +34,10 @@ class AuthorizeNet
         $result = $this->api->capturePreviouslyAuthorizedCreditCard($transactionId, $amount, $testMode);
         return $result;
     }
+
+    public function voidTransaction($transactionId, $testMode = null)
+    {
+        $result = $this->api->voidTransaction($transactionId, $testMode);
+        return $result;
+    }
 }

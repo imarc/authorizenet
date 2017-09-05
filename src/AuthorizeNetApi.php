@@ -17,6 +17,30 @@ class AuthorizeNetApi
         $this->transactionKey = $transactionKey;
     }
 
+    public function voidTransaction($transactionId, $testMode = null)
+    {
+        /* Create a merchantAuthenticationType object with authentication details retrieved from the constants file */
+        $merchantAuthentication = new AnetAPI\MerchantAuthenticationType();
+        $this->options($merchantAuthentication);
+
+        // Set the transaction's refId
+        $refId = 'ref' . time();
+
+        //create a transaction
+        $transactionRequestType = new AnetAPI\TransactionRequestType();
+        $transactionRequestType->setTransactionType('voidTransaction');
+        $transactionRequestType->setRefTransId($transactionId);
+
+        $request = new AnetAPI\CreateTransactionRequest();
+        $request->setMerchantAuthentication($merchantAuthentication);
+        $request->setRefId($refId);
+        $request->setTransactionRequest($transactionRequestType);
+        // Create the controller and get the response
+        $response = $this->handleExecution($testMode, $request);
+
+        return $this->handleResponse($response);
+    }
+
     public function authorizeCreditCard(array $order, bool $testMode = null)
     {
         /* Create a merchantAuthenticationType object with authentication details retrieved from the constants file */
@@ -54,12 +78,7 @@ class AuthorizeNetApi
         $request->setRefId($refId);
         $request->setTransactionRequest($transactionRequestType);
         // Create the controller and get the response
-        $controller = new AnetController\CreateTransactionController($request);
-        if ($testMode) {
-            $response = $controller->executeWithApiResponse(ANetEnvironment::SANDBOX);
-        } else {
-            $response = $controller->executeWithApiResponse(ANetEnvironment::PRODUCTION);
-        }
+        $response = $this->handleExecution($testMode, $request);
 
         return $this->handleResponse($response);
     }
@@ -81,13 +100,8 @@ class AuthorizeNetApi
         $request = new AnetAPI\CreateTransactionRequest();
         $request->setMerchantAuthentication($merchantAuthentication);
         $request->setTransactionRequest($transactionRequestType);
-        $controller = new AnetController\CreateTransactionController($request);
-        // testMode
-        if ($testMode) {
-            $response = $controller->executeWithApiResponse(ANetEnvironment::SANDBOX);
-        } else {
-            $response = $controller->executeWithApiResponse(ANetEnvironment::PRODUCTION);
-        }
+        // Create the controller and get the response
+        $response = $this->handleExecution($testMode, $request);
 
         return $this->handleResponse($response);
     }
@@ -104,6 +118,23 @@ class AuthorizeNetApi
             'error_code' => $transactionResponse->getErrors()[0]->getErrorCode(),
             'error_message' => $transactionResponse->getErrors()[0]->getErrorText()
         ];
+    }
+
+    /**
+     * @param $testMode
+     * @param $request
+     *
+     * @return AnetAPI\AnetApiResponseType
+     */
+    private function handleExecution($testMode, $request)
+    {
+        $controller = new AnetController\CreateTransactionController($request);
+        if ($testMode) {
+            $response = $controller->executeWithApiResponse(ANetEnvironment::SANDBOX);
+        } else {
+            $response = $controller->executeWithApiResponse(ANetEnvironment::PRODUCTION);
+        }
+        return $response;
     }
 
     private function handleResponse($response)
