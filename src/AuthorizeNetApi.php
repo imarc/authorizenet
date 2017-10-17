@@ -59,6 +59,7 @@ class AuthorizeNetApi
         $paymentOne->setCreditCard($creditCard);
         // Create order information
         $orderType = new AnetAPI\OrderType();
+        $orderType->setInvoiceNumber($order['invoice_number'] ?? '');
         $orderType->setDescription($order['description'] ?? '');
         // Set the customer's Bill To address
         $customerAddress = new AnetAPI\CustomerAddressType();
