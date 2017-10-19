@@ -11,7 +11,7 @@ class AuthorizeNetApi
     protected $loginId;
     protected $transactionKey;
 
-    public function __construct(string $loginId, string $transactionKey)
+    public function __construct($loginId, $transactionKey)
     {
         $this->loginId = $loginId;
         $this->transactionKey = $transactionKey;
@@ -41,7 +41,7 @@ class AuthorizeNetApi
         return $this->handleResponse($response);
     }
 
-    public function authorizeCreditCard(array $order, bool $testMode = null)
+    public function authorizeCreditCard($order, $testMode = null)
     {
         /* Create a merchantAuthenticationType object with authentication details retrieved from the constants file */
         $merchantAuthentication = new AnetAPI\MerchantAuthenticationType();
@@ -59,8 +59,13 @@ class AuthorizeNetApi
         $paymentOne->setCreditCard($creditCard);
         // Create order information
         $orderType = new AnetAPI\OrderType();
-        $orderType->setInvoiceNumber($order['invoice_number'] ?? '');
-        $orderType->setDescription($order['description'] ?? '');
+        
+        $invoice_number = (!empty($order['invoice_number'])) ?: '';
+        $description    = (!empty($order['description'])) ?: '';
+
+        $orderType->setInvoiceNumber($invoice_number);
+        $orderType->setDescription($description);
+        
         // Set the customer's Bill To address
         $customerAddress = new AnetAPI\CustomerAddressType();
         $customerAddress->setFirstName($order['customer']['first_name']);
@@ -84,7 +89,7 @@ class AuthorizeNetApi
         return $this->handleResponse($response);
     }
 
-    public function capturePreviouslyAuthorizedCreditCard($transactionId, int $amount = null, bool $testMode = null)
+    public function capturePreviouslyAuthorizedCreditCard($transactionId, $amount = null, $testMode = null)
     {
         /* Create a merchantAuthenticationType object with authentication details retrieved from the constants file */
         $merchantAuthentication = new AnetAPI\MerchantAuthenticationType();
@@ -113,7 +118,7 @@ class AuthorizeNetApi
         $merchantAuthentication->setTransactionKey($this->transactionKey);
     }
 
-    private function getErrorDetails($transactionResponse): array
+    private function getErrorDetails($transactionResponse)
     {
         return [
             'error_code' => $transactionResponse->getErrors()[0]->getErrorCode(),
