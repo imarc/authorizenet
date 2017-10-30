@@ -60,8 +60,8 @@ class AuthorizeNetApi
         // Create order information
         $orderType = new AnetAPI\OrderType();
         
-        $invoice_number = (!empty($order['invoice_number'])) ?: '';
-        $description    = (!empty($order['description'])) ?: '';
+        $invoice_number = (!empty($order['invoice_number'])) ? $order['invoice_number'] : '';
+        $description    = (!empty($order['description'])) ? $order['description'] : '';
 
         $orderType->setInvoiceNumber($invoice_number);
         $orderType->setDescription($description);
